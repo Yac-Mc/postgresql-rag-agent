@@ -51,7 +51,7 @@ patch.object(
 _bootstrap_patch = patch("agent.db_bootstrap.ensure_app_database")
 _bootstrap_patch.start()
 
-_neo4j_patch = patch("agent.graph.Neo4jGraph")
+_neo4j_patch = patch("agent.config.Neo4jGraph")
 _neo4j_patch.start()
 
 _postgres_verify_patch = patch(
