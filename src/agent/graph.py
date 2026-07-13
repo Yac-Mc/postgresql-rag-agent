@@ -1359,27 +1359,6 @@ class LangGraphAgent:
             
             print(f"Contexto RAG obtenido: {len(contexto_rag) if contexto_rag else 0} caracteres")
             
-            # print("Buscando consultas similares en Neo4j...")
-            # 
-            # # COMENTADO: Función para Neo4j
-            # def buscar_neo4j_completo(pregunta: str, limit: int = 3):
-            #     """Función síncrona para buscar en Neo4j"""
-            #     try:
-            #         # Usar el método síncrono del manager
-            #         return self.config.neo4j_manager._sync_semantic_search(pregunta, limit)
-            #     except Exception as e:
-            #         print(f"Error en buscar_neo4j_completo: {str(e)}")
-            #         return []
-            # 
-            # # COMENTADO: Ejecutar búsqueda Neo4j en hilo separado
-            # similares = await asyncio.to_thread(
-            #     buscar_neo4j_completo,
-            #     state["pregunta"],
-            #     3  # limit=3
-            # )
-            # 
-            # neo4j_count = len(similares) if similares else 0
-            # print(f"Consultas similares Neo4j encontradas: {neo4j_count}")
             # Variables temporales para mantener compatibilidad
             similares = None
             neo4j_count = 0
