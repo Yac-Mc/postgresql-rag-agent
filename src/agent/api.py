@@ -43,6 +43,9 @@ async def responder(pregunta: Pregunta):
         })
 
         if result.get("errores"):
+            error_tipo = result.get("metadata", {}).get("error_tipo")
+            if error_tipo == "error_transitorio":
+                raise HTTPException(status_code=503, detail=result["errores"])
             raise HTTPException(status_code=400, detail=result["errores"])
 
         return {

@@ -14,6 +14,16 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from google.api_core.exceptions import (
+    ResourceExhausted,
+    DeadlineExceeded,
+    ServiceUnavailable,
+    InternalServerError,
+    GatewayTimeout,
+    Aborted,
+    RetryError,
+    TooManyRequests,
+)
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -21,6 +31,24 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
+
+# Exceptions considered transient provider errors (rate-limit, timeout,
+# service/network failure), never a real security rejection. See design.md
+# for the rationale behind each class, including TooManyRequests as a
+# version-skew safeguard across google-api-core releases.
+TRANSIENT_LLM_EXCEPTIONS = (
+    ResourceExhausted,
+    DeadlineExceeded,
+    ServiceUnavailable,
+    InternalServerError,
+    GatewayTimeout,
+    Aborted,
+    RetryError,
+    TooManyRequests,
+    ConnectionError,
+    TimeoutError,
+    OSError,
+)
 
 try:
     # Import relativo normal: funciona cuando el módulo se carga como parte
@@ -45,6 +73,32 @@ except ImportError:
     from config import ChatbotConfig
 
 API_KEY_GEMINI = os.getenv("GEMINI_API_KEY", "")
+
+
+def route_after_security_analysis(state: State) -> str:
+    """Conditional-edge routing function for the security-analysis node.
+
+    Routes off the structured `decision_seguridad.tipo` field set by
+    `LangGraphAgent.analizar_seguridad` (present only when the question was
+    rejected, either "rechazo_seguridad" or "error_transitorio") instead of
+    string-sniffing "seguridad" inside free-text error messages. The old
+    string match silently missed the dangerous-keyword regex rejection path,
+    whose error message ("Consulta contiene operaciones peligrosas: ...")
+    never contains the word "seguridad" - a real safety-invariant bypass
+    letting flagged questions reach `generar_sql`. Extracted to module level
+    (out of the `_build_graph` closure) so it can be unit-tested directly
+    against the actual routing decision, not just the state fields it reads.
+    """
+    if state.get("decision_seguridad", {}).get("tipo"):
+        print("Consulta rechazada, yendo a rechazar_pregunta")
+        return "rechazar_pregunta"
+    pregunta = state.get("pregunta", "").lower()
+    sql_keywords = ["select", "lista", "cuántos", "cuantas", "cuántas", "mostrar", "buscar", "encontrar", "consultar"]
+    if any(keyword in pregunta for keyword in sql_keywords):
+        print("Consulta parece requerir SQL, procediendo a buscar contexto")
+        return "buscar_contexto"
+    print("Consulta no parece requerir SQL, procediendo a buscar contexto")
+    return "buscar_contexto"
 
 
 class LangGraphAgent:
@@ -108,17 +162,7 @@ class LangGraphAgent:
             return await self.ejecutar_sql(state)
 
         def after_security_analysis(state: State):
-            if state.get("errores") and any("seguridad" in error.lower() for error in state["errores"]):
-                print("Consulta rechazada por seguridad, yendo a rechazar_pregunta")
-                return "rechazar_pregunta"
-            pregunta = state.get("pregunta", "").lower()
-            sql_keywords = ["select", "lista", "cuántos", "cuantas", "cuántas", "mostrar", "buscar", "encontrar", "consultar"]
-            if any(keyword in pregunta for keyword in sql_keywords):
-                print("Consulta parece requerir SQL, procediendo a buscar contexto")
-                return "buscar_contexto"
-            else:
-                print("Consulta no parece requerir SQL, procediendo a buscar contexto")
-                return "buscar_contexto"
+            return route_after_security_analysis(state)
 
         def after_validation(state: State):
             sql_valido = state.get("sql_valido", False)
@@ -395,6 +439,7 @@ class LangGraphAgent:
                     "es_segura": False,
                     "razon": razon,
                     "riesgo": "alto",
+                    "tipo": "rechazo_seguridad",
                     "palabras_peligrosas": palabras_peligrosas_encontradas
                 }
                 error_msg = f"Consulta contiene operaciones peligrosas: {palabras_peligrosas_encontradas}"
@@ -448,6 +493,7 @@ class LangGraphAgent:
                     state["decision_seguridad"] = decision
 
                     if not decision.get("es_segura", False):
+                        decision["tipo"] = "rechazo_seguridad"
                         razon = decision.get("razon", f"Riesgo {decision.get('riesgo', 'alto')}")
                         error_msg = f"Consulta rechazada por seguridad: {razon}"
                         print(f"Consulta no segura: {error_msg}")
@@ -461,15 +507,26 @@ class LangGraphAgent:
                     state["decision_seguridad"] = {
                         "es_segura": False,
                         "razon": "error en el análisis de seguridad",
-                        "riesgo": "alto"
+                        "riesgo": "alto",
+                        "tipo": "error_transitorio"
                     }
                     state["errores"].append("Error en análisis de seguridad: respuesta no válida")
+            except TRANSIENT_LLM_EXCEPTIONS as e:
+                print(f"Error transitorio en llamada a Gemini: {str(e)}")
+                state["decision_seguridad"] = {
+                    "es_segura": False,
+                    "razon": "error en el análisis de seguridad",
+                    "riesgo": "alto",
+                    "tipo": "error_transitorio"
+                }
+                state["errores"].append(f"Error en análisis de seguridad: {str(e)}")
             except Exception as e:
                 print(f"Error en llamada a Gemini: {str(e)}")
                 state["decision_seguridad"] = {
                     "es_segura": False,
                     "razon": "error en el análisis de seguridad",
-                    "riesgo": "alto"
+                    "riesgo": "alto",
+                    "tipo": "error_transitorio"
                 }
                 state["errores"].append(f"Error en análisis de seguridad: {str(e)}")
 
@@ -480,7 +537,8 @@ class LangGraphAgent:
             state["decision_seguridad"] = {
                 "es_segura": False,
                 "razon": "error en el análisis de seguridad",
-                "riesgo": "alto"
+                "riesgo": "alto",
+                "tipo": "error_transitorio"
             }
             print("Estado actualizado con información de error")
         
@@ -991,25 +1049,38 @@ class LangGraphAgent:
         return state
 
     async def rechazar_pregunta(self, state: State) -> State:
-        print("Rechazando pregunta por motivos de seguridad")
         decision_seguridad = state.get("decision_seguridad", {})
-        razon = decision_seguridad.get("razon", decision_seguridad.get("riesgo", "motivos de seguridad"))
+        tipo = decision_seguridad.get("tipo", "rechazo_seguridad")
 
-        if razon == "motivos de seguridad" and state.get("errores"):
-            for error in state["errores"]:
-                if "seguridad" in error.lower() or "riesgo" in error.lower():
-                    razon = error
-                    break
+        if tipo == "error_transitorio":
+            print("Rechazando pregunta por error transitorio del servicio de LLM")
+            state["respuesta_natural"] = (
+                " El servicio de análisis no está disponible en este momento. "
+                "\n\nPor favor reintenta tu consulta en unos instantes."
+            )
+            error_msg = "Pregunta no procesada: error transitorio del servicio de LLM"
+        else:
+            print("Rechazando pregunta por motivos de seguridad")
+            razon = decision_seguridad.get("razon", decision_seguridad.get("riesgo", "motivos de seguridad"))
 
-        state["respuesta_natural"] = (
-            f" No puedo procesar tu solicitud debido a {razon}. "
-            f"\n\nPor favor formula una consulta diferente que sea de solo lectura (SELECT) "
-            f"y no involucre operaciones peligrosas como INSERT, UPDATE, DELETE, DROP, etc."
-            f"\n\nSi crees que esto es un error, por contacta con el administrador del sistema."
-        )
+            if razon == "motivos de seguridad" and state.get("errores"):
+                for error in state["errores"]:
+                    if "seguridad" in error.lower() or "riesgo" in error.lower():
+                        razon = error
+                        break
 
-        error_msg = f"Pregunta rechazada por seguridad: {razon}"
+            state["respuesta_natural"] = (
+                f" No puedo procesar tu solicitud debido a {razon}. "
+                f"\n\nPor favor formula una consulta diferente que sea de solo lectura (SELECT) "
+                f"y no involucre operaciones peligrosas como INSERT, UPDATE, DELETE, DROP, etc."
+                f"\n\nSi crees que esto es un error, por contacta con el administrador del sistema."
+            )
+
+            error_msg = f"Pregunta rechazada por seguridad: {razon}"
+
         state["errores"] = state.get("errores", []) + [error_msg]
+        state["metadata"] = state.get("metadata", {})
+        state["metadata"]["error_tipo"] = tipo
 
         print(f"Pregunta rechazada: {error_msg}")
         return state
