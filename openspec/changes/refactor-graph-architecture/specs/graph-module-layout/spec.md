@@ -83,6 +83,50 @@ without any code changes after the split.
 - **WHEN** the LangGraph CLI loads the graph
 - **THEN** it MUST resolve the same `graph` object as before the split
 
+### Requirement: Module Split Survives File-Path Loading (langgraph dev)
+`langgraph dev` loads `graph.py` via `importlib.util.spec_from_file_location`
+directly by file path, NOT as part of the `agent` package. Under this
+loading mode, relative imports (`from .state import State`, etc.) fail
+with `ImportError: attempted relative import with no known parent
+package`, because there is no parent package context. `graph.py` and any
+module it imports (directly or transitively) that uses relative imports to
+reach sibling modules MUST also succeed when loaded this way, not only
+when imported through the normal `agent` package (pytest, `api.py`,
+`import agent.graph`).
+
+This requirement exists specifically to prevent a future cleanup from
+treating the fallback import mechanism as unreachable dead code (since
+pytest and `api.py` never exercise the fallback branch) and removing it,
+silently reintroducing this regression.
+
+#### Scenario: graph.py loads successfully via direct file-path import
+- **GIVEN** `graph.py` is loaded via `importlib.util.spec_from_file_location`
+  pointed directly at its file path, with no `agent` package context
+  (reproducing exactly how `langgraph dev` loads it)
+- **WHEN** the module executes its top-level imports
+- **THEN** all five extracted sibling modules (`state`, `neo4j_manager`,
+  `sql_processing`, `rag`, `config`) MUST import successfully
+- **AND** no `ImportError: attempted relative import with no known parent
+  package` MUST occur
+
+#### Scenario: config.py loads successfully when triggered via file-path load
+- **GIVEN** `graph.py` was loaded via file path (as above) and its fallback
+  branch triggers `from config import ChatbotConfig`
+- **WHEN** `config.py` itself executes its own imports of `neo4j_manager`,
+  `rag`, and `sql_processing`
+- **THEN** those imports MUST also succeed via the same relative-then-
+  absolute fallback pattern, without requiring `config.py` to be imported
+  through the `agent` package
+
+#### Scenario: langgraph dev starts and Studio UI can invoke the graph
+- **GIVEN** `langgraph dev --no-reload --tunnel` is started against this
+  codebase
+- **WHEN** the CLI loads `graph.py` and registers the graph
+- **THEN** no `ImportError` MUST occur during graph registration
+- **AND** a real invocation submitted through LangGraph Studio MUST reach
+  at least the first LLM call (proving the full node chain executed,
+  regardless of Gemini quota outcomes)
+
 ### Requirement: Import-Time Side Effects Preserved
 `agent = setup_graph()` MUST continue to execute at module-import time
 with the same side effects as before the split (real connections to
