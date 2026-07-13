@@ -35,6 +35,8 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 
+from .state import State
+
 
 def obtener_ddl_dinamico(engine) -> str:
     """Introspecciona el esquema real de la base de datos Postgres conectada
@@ -82,25 +84,6 @@ def obtener_ddl_dinamico(engine) -> str:
 
 API_KEY_GEMINI = os.getenv("GEMINI_API_KEY", "")
 
-
-class State(TypedDict):
-    messages: Annotated[List, add_messages]
-    pregunta: str
-    contexto: NotRequired[str]
-    embedding: NotRequired[List[float]]
-    sql_generado: NotRequired[str]
-    sql_ast: NotRequired[Dict]
-    resultados_sql: NotRequired[List[Dict]]
-    resultados_neo4j: NotRequired[List[Dict]]
-    respuesta_natural: NotRequired[str]
-    errores: List[str]
-    ejecucion_exitosa: NotRequired[bool]
-    intentos_ejecucion: NotRequired[int]
-    decision_seguridad: NotRequired[Dict]
-    metadata: NotRequired[Dict]
-    ddl: NotRequired[str]
-    sql_valido: NotRequired[bool] 
-    metricas_busqueda: NotRequired[Dict]
 
 class Neo4jGraph:
     def __init__(self, url: str, username: str, password: str):
