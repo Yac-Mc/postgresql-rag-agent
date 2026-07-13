@@ -147,16 +147,6 @@ Invoke-RestMethod -Uri http://localhost:8000/chat -Method Post -ContentType "app
 
 ## Seguridad
 
-> ⚠️ **Acción manual requerida**: una contraseña real de base de datos (de un
-> proveedor externo usado en el código heredado, ya no vigente en este
-> proyecto) quedó expuesta en texto plano en el historial de git en el commit
-> `6da906b`. Aunque ya fue removida del código fuente (ver
-> `openspec/changes/fix-security-credentials/`), **el historial de git sigue
-> conteniéndola** — quitarla del código no alcanza. Esa contraseña debe
-> **rotarse manualmente en el proveedor correspondiente** y, si todavía se
-> usa en algún entorno, actualizar `DATABASE_URL` en el `.env` local con el
-> nuevo valor. Este paso no puede hacerse desde el código.
-
 Antes de comittear, corré el escáner de secretos incluido en el repo para
 detectar credenciales hardcodeadas (connection strings con password en texto
 plano, API keys de Groq/Gemini, tokens de GitLab):
