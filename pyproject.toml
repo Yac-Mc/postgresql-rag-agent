@@ -37,5 +37,13 @@ dev = [
     "langgraph-cli[inmem]>=0.2.8",
     "mypy>=1.13.0",
     "pytest>=8.3.5",
+    "pytest-cov>=6.0.0",
     "ruff>=0.8.2",
 ]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: requires local Docker Postgres/Neo4j (excluded by default; run with -m integration)",
+]
+addopts = "--cov=src/agent --cov-report=term-missing"
+testpaths = ["tests"]

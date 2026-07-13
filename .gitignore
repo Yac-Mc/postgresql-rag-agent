@@ -13,3 +13,6 @@ build/
 dist/
 .langgraph_api/
 .atl/
+.coverage
+htmlcov/
+
