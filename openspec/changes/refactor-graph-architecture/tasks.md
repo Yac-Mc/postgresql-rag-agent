@@ -44,16 +44,16 @@ Chain strategy: stacked-to-main
 
 ## Commit 3: `sql_processing.py`
 
-- [ ] 3.1 Move `obtener_ddl_dinamico` (L39–85) + `SQLProcessor` (L760–877) verbatim to `src/agent/sql_processing.py`; import `sqlalchemy.inspect`, `re`, `json`
-- [ ] 3.2 In `graph.py`: remove both, add `from .sql_processing import SQLProcessor, obtener_ddl_dinamico`; keep `from sqlalchemy import inspect` local for patch compatibility
-- [ ] 3.3 Verify: `pytest -m "not integration"` green; `python -c "import agent.sql_processing"` smoke import; `test_sql_processor.py` patch target `agent.graph.inspect` still resolves
+- [x] 3.1 Move `obtener_ddl_dinamico` (L39–85) + `SQLProcessor` (L760–877) verbatim to `src/agent/sql_processing.py`; import `sqlalchemy.inspect`, `re`, `json`
+- [x] 3.2 In `graph.py`: remove both, add `from .sql_processing import SQLProcessor, obtener_ddl_dinamico`; keep `from sqlalchemy import inspect` local for patch compatibility
+- [x] 3.3 Verify: `pytest -m "not integration"` green; `python -c "import agent.sql_processing"` smoke import; patch target corrected to `agent.sql_processing.inspect` (functions resolve globals in the module where defined, not where re-exported)
 - [ ] 3.4 Commit: `refactor(agent): extract SQLProcessor and obtener_ddl_dinamico to sql_processing.py`
 
 ## Commit 4: `rag.py`
 
-- [ ] 4.1 Move `SQLRAGSystem` (L562–630) verbatim to `src/agent/rag.py`; import `chromadb`, `numpy`, `psycopg2`, `sentence_transformers.SentenceTransformer`, `sklearn.metrics.pairwise.cosine_similarity`, `urllib.parse.urlparse`
-- [ ] 4.2 In `graph.py`: remove class, add `from .rag import SQLRAGSystem`; keep `import psycopg2` local for patch compatibility
-- [ ] 4.3 Verify: `pytest -m "not integration"` green; `python -c "import agent.rag"` smoke import; `test_configuration.py` patch target `agent.graph.psycopg2.connect` still resolves
+- [x] 4.1 Move `SQLRAGSystem` verbatim to `src/agent/rag.py`; actual imports needed (confirmed by reading code): `os`, `psycopg2`, `sentence_transformers.SentenceTransformer` (chromadb/numpy/sklearn/urlparse are NOT used inside this class body)
+- [x] 4.2 In `graph.py`: remove class, add `from .rag import SQLRAGSystem`; kept `import psycopg2` local for other code in graph.py still using it
+- [x] 4.3 Verify: `pytest -m "not integration"` green (17/17); `python` isolated module-load smoke import of `agent.rag` succeeded; patch target in `test_configuration.py` corrected to `agent.rag.psycopg2.connect` (same root cause as commit 3 — function globals resolve in defining module)
 - [ ] 4.4 Commit: `refactor(agent): extract SQLRAGSystem to rag.py`
 
 ## Commit 5: `config.py`

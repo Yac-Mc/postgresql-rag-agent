@@ -28,7 +28,7 @@ def test_get_connection_never_hardcodes_sslmode(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass@localhost:5432/db")
     rag_system = SQLRAGSystem.__new__(SQLRAGSystem)
 
-    with patch("agent.graph.psycopg2.connect", return_value=MagicMock()) as mock_connect:
+    with patch("agent.rag.psycopg2.connect", return_value=MagicMock()) as mock_connect:
         rag_system.get_connection()
 
     mock_connect.assert_called_once_with("postgresql://user:pass@localhost:5432/db")
