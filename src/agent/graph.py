@@ -10,15 +10,9 @@ os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
 import re
-import uuid
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated, Dict, List, Optional, Union
-from typing_extensions import TypedDict, NotRequired
-from urllib.parse import urlparse
-
-from sqlalchemy import text, inspect
 
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 from langchain_core.output_parsers import JsonOutputParser

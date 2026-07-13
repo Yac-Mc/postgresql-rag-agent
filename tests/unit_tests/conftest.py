@@ -33,8 +33,9 @@ patch.object(sqlalchemy, "create_engine", return_value=MagicMock()).start()
 # (inside `_init_postgresql`). A generic `MagicMock` engine isn't a type
 # SQLAlchemy's `inspect()` recognizes, so patch `inspect` itself to return a
 # fake inspector reporting an empty schema - safe and consistent with the
-# `patch("agent.graph.inspect", ...)` pattern already used in
-# test_sql_processor.py for the same function.
+# `patch("agent.sql_processing.inspect", ...)` pattern used in
+# test_sql_processor.py for the same function (post module-split; that
+# function now lives in agent/sql_processing.py, not agent/graph.py).
 _fake_inspector = MagicMock()
 _fake_inspector.get_table_names.return_value = []
 patch.object(sqlalchemy, "inspect", return_value=_fake_inspector).start()
