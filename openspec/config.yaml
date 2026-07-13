@@ -1,0 +1,35 @@
+# openspec/config.yaml
+schema: spec-driven
+
+context: |
+  Tech stack: Python 3.11+, LangGraph, LangChain (langchain-google-genai for Gemini),
+  FastAPI, SQLAlchemy + psycopg2, ChromaDB + sentence-transformers, Neo4j.
+  Architecture: single-file agent (src/agent/graph.py) orchestrated as a LangGraph
+  state graph (security analysis -> RAG context -> SQL generation -> validation ->
+  execution -> natural language response). Exposed via LangGraph Studio and a
+  FastAPI REST endpoint (/chat).
+  Testing: pytest (declared in pyproject.toml), no real test coverage yet
+  (scaffold-only tests from the LangGraph starter template).
+  Style: Windows/PowerShell only, no Linux-specific tooling or docs.
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Document architecture decisions with rationale
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    - Follow existing code patterns
+    tdd: false
+    test_command: "pytest"
+  verify:
+    test_command: "pytest"
+    build_command: ""
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas

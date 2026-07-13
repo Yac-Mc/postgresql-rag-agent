@@ -130,6 +130,29 @@ Ejemplo de invocación por comando:
 Invoke-RestMethod -Uri http://localhost:8000/chat -Method Post -ContentType "application/json" -Body '{"texto": "cuantos usuarios hay?"}'
 ```
 
+## Seguridad
+
+> ⚠️ **Acción manual requerida**: una contraseña real de base de datos (de un
+> proveedor externo usado en el código heredado, ya no vigente en este
+> proyecto) quedó expuesta en texto plano en el historial de git en el commit
+> `6da906b`. Aunque ya fue removida del código fuente (ver
+> `openspec/changes/fix-security-credentials/`), **el historial de git sigue
+> conteniéndola** — quitarla del código no alcanza. Esa contraseña debe
+> **rotarse manualmente en el proveedor correspondiente** y, si todavía se
+> usa en algún entorno, actualizar `DATABASE_URL` en el `.env` local con el
+> nuevo valor. Este paso no puede hacerse desde el código.
+
+Antes de comittear, corré el escáner de secretos incluido en el repo para
+detectar credenciales hardcodeadas (connection strings con password en texto
+plano, API keys de Groq/Gemini, tokens de GitLab):
+
+```powershell
+python scripts/check_secrets.py
+```
+
+Sale con código `0` si no encuentra nada, o con código `1` e imprime
+`archivo:línea` de cada hallazgo si detecta algo sospechoso.
+
 ## Variables de entorno
 
 | Variable         | Requerida | Descripción                                                        | De dónde sale                                              |
@@ -158,9 +181,32 @@ corregidos. Verificado end-to-end tanto en LangGraph Studio como en modo API
 Postgres → respuesta en lenguaje natural. `graph.py` se mantiene como un
 único archivo (sin modularizar).
 
-**Fase 2 (pendiente)**: propuestas SDD de refactor:
+**Fase 2 (en curso)**: propuestas de mejora, gestionadas con SDD (ver sección
+"Desarrollo y documentación de cambios" más abajo):
 - `fix-security-credentials`
 - `refactor-graph-architecture` (modularizar `graph.py` en archivos separados)
 - `add-conversation-memory`
 - `add-test-coverage`
 - `cleanup-docs-deps`
+
+## Desarrollo y documentación de cambios
+
+Este proyecto combina dos herramientas para mantener contexto entre sesiones
+de desarrollo (incluido con asistentes de IA):
+
+- **Engram (Gentle AI)**: memoria persistente que sobrevive entre sesiones —
+  decisiones, bugs encontrados, descubrimientos técnicos, y contexto de por
+  qué se hizo algo. No vive en este repo (es una base de datos externa al
+  proyecto), se consulta a través del asistente de IA que se use para
+  trabajar en el código.
+- **OpenSpec** (`openspec/`): specs formales versionadas en git para cambios y
+  funcionalidades principales — cada cambio bajo `openspec/changes/{nombre}/`
+  tiene su `proposal.md` (qué y por qué), `specs/` (requisitos formales),
+  `design.md` (decisiones técnicas) y `tasks.md` (desglose de implementación
+  con checklist). Los cambios completados se archivan en
+  `openspec/changes/archive/`.
+
+Para retomar el desarrollo de una funcionalidad o cambio en curso, revisá la
+carpeta correspondiente en `openspec/changes/`. Para entender decisiones
+puntuales o bugs ya resueltos que no ameritan una spec formal, esos quedan en
+Engram (accesible vía el asistente de IA).

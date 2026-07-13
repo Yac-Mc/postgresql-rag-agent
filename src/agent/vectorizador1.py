@@ -37,7 +37,9 @@ def es_columna_textual(col):
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-DB_URL = "postgresql://postgres.dsxlxkbwsrjqqexfvqzj:Paloma2695147-@aws-0-eu-west-3.pooler.supabase.com:5432/postgres"
+DB_URL = os.getenv("DATABASE_URL")
+if not DB_URL:
+    raise ValueError("DATABASE_URL no está definida en el entorno (.env)")
 engine = create_engine(DB_URL)
 
 inspector = inspect(engine)

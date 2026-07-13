@@ -564,14 +564,14 @@ class SQLRAGSystem:
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
 
     def get_connection(self):
-        return psycopg2.connect(
-            host="aws-0-eu-west-3.pooler.supabase.com",
-            port=5432,
-            database="postgres",
-            user="postgres.dsxlxkbwsrjqqexfvqzj",
-            password="Paloma2695147-",
-            sslmode="require"
-        )
+        database_url = os.getenv("DATABASE_URL")
+        if not database_url:
+            raise ValueError("DATABASE_URL no está definida en el entorno (.env)")
+        # sslmode NO se hardcodea: depende del servidor (Postgres local en Docker
+        # no tiene SSL habilitado; una instancia cloud puede requerirlo). Si hace
+        # falta, se agrega como query param en el propio DATABASE_URL
+        # (?sslmode=require), no en código.
+        return psycopg2.connect(database_url)
 
     def buscar_instrucciones_similares(self, pregunta_usuario, top_k=5, umbral_similitud=0.3):
         conexion = self.get_connection()
