@@ -89,19 +89,34 @@ probar el flujo NL→SQL sin tener una base de datos propia todavía.
 **Opción A — LangGraph Studio (modo gráfico):**
 
 ```powershell
-langgraph dev --no-reload
+langgraph dev --no-reload --tunnel
 ```
 
-> El flag `--no-reload` es necesario: sin él, `langgraph dev` detecta las
-> escrituras constantes que hace ChromaDB en `chroma_db_v2/` como "cambios de
-> código" y reinicia el proceso en loop, hasta terminar cayéndose. Es un fix
-> de desarrollo local; no aplica al modo API (`api.py`), que no tiene hot-reload.
+> **`--no-reload`**: sin él, `langgraph dev` detecta las escrituras
+> constantes que hace ChromaDB en `chroma_db_v2/` como "cambios de código" y
+> reinicia el proceso en loop, hasta terminar cayéndose. Es un fix de
+> desarrollo local; no aplica al modo API (`api.py`), que no tiene hot-reload.
+>
+> **`--tunnel`**: sin él, la UI de LangGraph Studio (hosteada en
+> `smith.langchain.com`) no puede conectarse al servidor local — el
+> navegador bloquea el acceso a `http://127.0.0.1` desde un sitio HTTPS
+> externo ("Private Network Access"), mostrando `Failed to fetch`. El flag
+> crea un túnel público de Cloudflare para evitar ese bloqueo.
 
-La consola va a imprimir la URL exacta al arrancar. Por defecto es:
+La consola va a imprimir la URL exacta al arrancar. Con `--tunnel`, se ve algo así:
 
 ```
-https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024
+- API: https://<algo-random>.trycloudflare.com
+- Studio UI: https://smith.langchain.com/studio/?baseUrl=https://<algo-random>.trycloudflare.com
 ```
+
+> **Primera vez con cada túnel nuevo**: LangGraph Studio va a mostrar
+> `Failed to connect to Agent Server because the domain "..." is not
+> allowed`. Hacé clic en **"Configure connection"** (o Advanced Settings) en
+> esa misma pantalla y agregá el dominio `*.trycloudflare.com` mostrado a la
+> lista de dominios permitidos. El dominio cambia en cada reinicio del
+> túnel, así que este paso se repite cada vez que se reinicia
+> `langgraph dev --tunnel`.
 
 Ahí, en el panel de invocación, se ingresa un JSON como este:
 
@@ -170,6 +185,17 @@ Sale con código `0` si no encuentra nada, o con código `1` e imprime
 > para API keys nuevas (`404 no longer available to new users`) pese a figurar
 > en el listado de `/models` de la API. El alias `-latest` apunta siempre al
 > Flash vigente, evitando este problema a futuro.
+
+> ⚠️ **Límite de cuota gratuita de Gemini**: el free tier permite solo **5
+> requests por minuto** y un límite diario por modelo. Cada pregunta que
+> procesa el agente hace hasta **3 llamadas a Gemini** en cadena (análisis
+> de seguridad → generación de SQL → generación de respuesta), así que con
+> 2 preguntas seguidas se puede agotar el límite por minuto. Cuando esto
+> pasa, el agente responde con el mensaje genérico de "rechazo por
+> seguridad" en vez de mostrar el error 429 real — revisá los logs de la
+> consola para confirmar si el rechazo es por una consulta realmente
+> peligrosa o por cuota agotada (`retry_delay` en el error indica cuántos
+> segundos esperar).
 
 ## Roadmap
 

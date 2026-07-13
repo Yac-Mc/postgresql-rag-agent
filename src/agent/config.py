@@ -13,9 +13,20 @@ from sqlalchemy.orm import sessionmaker
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from .neo4j_manager import Neo4jGraph, Neo4jManager
-from .rag import SQLRAGSystem
-from .sql_processing import SQLProcessor, obtener_ddl_dinamico
+try:
+    from .neo4j_manager import Neo4jGraph, Neo4jManager
+    from .rag import SQLRAGSystem
+    from .sql_processing import SQLProcessor, obtener_ddl_dinamico
+except ImportError:
+    # Mismo fallback que graph.py: si este módulo se carga sin contexto de
+    # paquete (ej. como dependencia indirecta de un graph.py cargado por
+    # ruta de archivo por `langgraph dev`), los imports relativos fallan.
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).parent))
+    from neo4j_manager import Neo4jGraph, Neo4jManager
+    from rag import SQLRAGSystem
+    from sql_processing import SQLProcessor, obtener_ddl_dinamico
 
 API_KEY_GEMINI = os.getenv("GEMINI_API_KEY", "")
 

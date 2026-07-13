@@ -22,11 +22,27 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 
-from .state import State
-from .neo4j_manager import Neo4jGraph, Neo4jManager
-from .sql_processing import SQLProcessor, obtener_ddl_dinamico
-from .rag import SQLRAGSystem
-from .config import ChatbotConfig
+try:
+    # Import relativo normal: funciona cuando el módulo se carga como parte
+    # del paquete "agent" (pytest, api.py, `import agent.graph`).
+    from .state import State
+    from .neo4j_manager import Neo4jGraph, Neo4jManager
+    from .sql_processing import SQLProcessor, obtener_ddl_dinamico
+    from .rag import SQLRAGSystem
+    from .config import ChatbotConfig
+except ImportError:
+    # Fallback sin paquete: `langgraph dev` carga graph.py por RUTA DE
+    # ARCHIVO directa (importlib.util.spec_from_file_location), no como
+    # parte del paquete "agent" — ahí un import relativo falla con
+    # "attempted relative import with no known parent package". En ese
+    # caso, el propio directorio de graph.py ya está en sys.path (o se
+    # agrega acá), así que los módulos hermanos son importables sin punto.
+    sys.path.insert(0, str(Path(__file__).parent))
+    from state import State
+    from neo4j_manager import Neo4jGraph, Neo4jManager
+    from sql_processing import SQLProcessor, obtener_ddl_dinamico
+    from rag import SQLRAGSystem
+    from config import ChatbotConfig
 
 API_KEY_GEMINI = os.getenv("GEMINI_API_KEY", "")
 
