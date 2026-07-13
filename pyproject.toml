@@ -1,0 +1,41 @@
+[project]
+name = "postgresql-rag-agent"
+version = "0.1.0"
+description = "Agente NL->SQL generico para bases de datos PostgreSQL, con RAG (Chroma) y memoria de consultas (Neo4j)."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "langgraph>=0.5.2",
+    "python-dotenv>=1.1.1",
+    "fastapi>=0.116.1",
+    "uvicorn>=0.35.0",
+]
+
+[project.optional-dependencies]
+dev = ["mypy>=1.11.1", "ruff>=0.6.1", "pytest>=8.3.5"]
+
+[build-system]
+requires = ["setuptools>=77.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+lint.select = ["E", "F", "I", "D", "D401", "T201", "UP"]
+lint.ignore = ["UP006", "UP007", "UP035", "D417", "E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D", "UP"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[dependency-groups]
+dev = [
+    "anyio>=4.7.0",
+    "langgraph-cli[inmem]>=0.2.8",
+    "mypy>=1.13.0",
+    "pytest>=8.3.5",
+    "ruff>=0.8.2",
+]

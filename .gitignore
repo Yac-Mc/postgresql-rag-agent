@@ -1,0 +1,15 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+chroma_db_v2/
+*.log
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+.langgraph_api/
+.atl/
