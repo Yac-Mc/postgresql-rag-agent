@@ -36,10 +36,10 @@ Chain strategy: stacked-to-main
 
 ## Commit 2: `neo4j_manager.py`
 
-- [ ] 2.1 Move `Neo4jGraph` (L105–121) + `Neo4jManager` (L631–759) verbatim to `src/agent/neo4j_manager.py`; import `neo4j.GraphDatabase`
-- [ ] 2.2 Apply `TYPE_CHECKING` guard: `if TYPE_CHECKING: from .config import ChatbotConfig`; quote annotation `config: "ChatbotConfig" = None`
-- [ ] 2.3 In `graph.py`: remove both classes, add `from .neo4j_manager import Neo4jGraph, Neo4jManager`
-- [ ] 2.4 Verify: `pytest -m "not integration"` green; `python -c "import agent.neo4j_manager"` succeeds standalone; explicit check `import agent.neo4j_manager` does NOT trigger `agent.config` import (no circular import)
+- [x] 2.1 Move `Neo4jGraph` (L105–121) + `Neo4jManager` (L631–759) verbatim to `src/agent/neo4j_manager.py`; import `neo4j.GraphDatabase`
+- [x] 2.2 Apply `TYPE_CHECKING` guard: `if TYPE_CHECKING: from .config import ChatbotConfig`; quote annotation `config: "ChatbotConfig" = None`
+- [x] 2.3 In `graph.py`: remove both classes, add `from .neo4j_manager import Neo4jGraph, Neo4jManager`
+- [x] 2.4 Verify: `pytest -m "not integration"` green; `python -c "import agent.neo4j_manager"` succeeds standalone; explicit check `import agent.neo4j_manager` does NOT trigger `agent.config` import (no circular import)
 - [ ] 2.5 Commit: `refactor(agent): extract Neo4jGraph and Neo4jManager to neo4j_manager.py`
 
 ## Commit 3: `sql_processing.py`
