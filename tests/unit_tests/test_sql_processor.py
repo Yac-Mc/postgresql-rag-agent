@@ -71,7 +71,7 @@ class TestObtenerDdlDinamico:
         mock_inspector.get_foreign_keys.return_value = []
         mock_engine = MagicMock()
 
-        with patch("agent.graph.inspect", return_value=mock_inspector):
+        with patch("agent.sql_processing.inspect", return_value=mock_inspector):
             ddl = obtener_ddl_dinamico(mock_engine)
 
         assert "users" in ddl
@@ -83,7 +83,7 @@ class TestObtenerDdlDinamico:
         mock_inspector.get_table_names.return_value = []
         mock_engine = MagicMock()
 
-        with patch("agent.graph.inspect", return_value=mock_inspector):
+        with patch("agent.sql_processing.inspect", return_value=mock_inspector):
             ddl = obtener_ddl_dinamico(mock_engine)
 
         assert "No se encontraron tablas" in ddl
