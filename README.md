@@ -181,11 +181,9 @@ Sale con código `0` si no encuentra nada, o con código `1` e imprime
 > procesa el agente hace hasta **3 llamadas a Gemini** en cadena (análisis
 > de seguridad → generación de SQL → generación de respuesta), así que con
 > 2 preguntas seguidas se puede agotar el límite por minuto. Cuando esto
-> pasa, el agente responde con el mensaje genérico de "rechazo por
-> seguridad" en vez de mostrar el error 429 real — revisá los logs de la
-> consola para confirmar si el rechazo es por una consulta realmente
-> peligrosa o por cuota agotada (`retry_delay` en el error indica cuántos
-> segundos esperar).
+> pasa, el agente responde con un mensaje honesto de servicio no disponible
+> temporalmente (HTTP 503 en `/chat`), distinto del mensaje de rechazo por
+> seguridad — ya no se confunden entre sí.
 
 ## Roadmap
 
@@ -197,13 +195,20 @@ corregidos. Verificado end-to-end tanto en LangGraph Studio como en modo API
 Postgres → respuesta en lenguaje natural. `graph.py` se mantiene como un
 único archivo (sin modularizar).
 
-**Fase 2 (en curso)**: propuestas de mejora, gestionadas con SDD (ver sección
-"Desarrollo y documentación de cambios" más abajo):
+**Fase 2 (✅ completada, 6/6)**: propuestas de mejora, gestionadas con SDD (ver
+sección "Desarrollo y documentación de cambios" más abajo):
 - `fix-security-credentials`
-- `refactor-graph-architecture` (modularizar `graph.py` en archivos separados)
-- `add-conversation-memory`
-- `add-test-coverage`
 - `cleanup-docs-deps`
+- `add-test-coverage`
+- `refactor-graph-architecture` (modularizó `graph.py` en archivos separados)
+- `fix-conftest-mock-leak`
+- `distinguish-llm-transient-errors`
+
+## Roadmap — Nuevas funcionalidades
+
+Funcionalidad nueva, no cubierta por la Fase 2 (que fue refactor/limpieza de lo
+existente):
+- `add-conversation-memory`
 
 ## Desarrollo y documentación de cambios
 
