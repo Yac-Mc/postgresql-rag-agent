@@ -14,6 +14,7 @@ _active_patches = []
 os.environ.setdefault("DATABASE_URL", "postgresql://test:test@localhost:5432/testdb")
 os.environ.setdefault("NEO4J_PASSWORD", "test")
 os.environ.setdefault("GEMINI_API_KEY", "test-key-not-real")
+os.environ.setdefault("API_KEY", "test-api-key-not-real")
 
 # --- External-library patches, applied BEFORE any `agent.*` import ---
 #

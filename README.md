@@ -208,7 +208,8 @@ sección "Desarrollo y documentación de cambios" más abajo):
 
 Funcionalidad nueva, no cubierta por la Fase 2 (que fue refactor/limpieza de lo
 existente):
-- `add-conversation-memory`
+- [ ] `add-conversation-memory`
+- [x] `add-api-key-auth`
 
 ## Desarrollo y documentación de cambios
 

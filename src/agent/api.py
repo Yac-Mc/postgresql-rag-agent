@@ -1,4 +1,6 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Security
+from fastapi.security import APIKeyHeader
+import os
 import uvicorn
 from pydantic import BaseModel
 from langchain_core.messages import HumanMessage
@@ -9,6 +11,17 @@ load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+API_KEY = os.getenv("API_KEY")
+if not API_KEY:
+    raise RuntimeError("API_KEY no esta definida en el entorno (.env)")
+
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+def verify_api_key(api_key: str = Security(api_key_header)) -> None:
+    if api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
 
 # Import a nivel de módulo (fuera de cualquier función async): setup_graph()
 # en graph.py crea su propio event loop con asyncio.new_event_loop() +
@@ -30,7 +43,7 @@ async def startup_event():
     app.state.graph = await get_graph()
 
 
-@app.post("/chat")
+@app.post("/chat", dependencies=[Security(verify_api_key)])
 async def responder(pregunta: Pregunta):
     result = None
     try:
