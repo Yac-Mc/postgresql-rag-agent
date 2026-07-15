@@ -213,6 +213,8 @@ existente):
 
 ## Despliegue
 
+**Slides del proyecto (arquitectura, seguridad, calidad):** https://slides-postgresql-rag-agent.onrender.com
+
 Arquitectura de publicación pública (temporal, free/low-cost tier), en curso:
 
 - **Neon.tech**: Postgres gestionado en la nube, reemplaza al contenedor
