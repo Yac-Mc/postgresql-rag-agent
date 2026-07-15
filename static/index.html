@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>postgresql-rag-agent — Slides</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #161925;
+    --accent: #5eead4;
+    --accent-2: #818cf8;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+    --danger: #f87171;
+    --ok: #4ade80;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+  }
+  .deck {
+    position: relative;
+    width: 100vw; height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .slide {
+    position: absolute;
+    width: min(1100px, 92vw);
+    height: min(640px, 88vh);
+    background: var(--panel);
+    border-radius: 20px;
+    padding: 48px 56px;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .slide.active { display: flex; }
+  .slide h1 {
+    font-size: 2.4rem; margin: 0 0 8px 0;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .slide h2 {
+    font-size: 1.9rem; margin: 0 0 20px 0; color: var(--accent);
+  }
+  .slide .subtitle { font-size: 1.2rem; color: var(--muted); margin-bottom: 24px; }
+  .slide .pitch {
+    font-size: 1.05rem; line-height: 1.6; max-width: 720px;
+  }
+  .slide-number {
+    position: absolute; bottom: 16px; right: 24px;
+    color: var(--muted); font-size: 0.85rem;
+  }
+  .badge {
+    display: inline-block; background: rgba(94,234,212,0.12);
+    color: var(--accent); border: 1px solid rgba(94,234,212,0.3);
+    padding: 4px 12px; border-radius: 999px; font-size: 0.85rem;
+    margin-bottom: 16px; width: fit-content;
+  }
+  .reason {
+    margin-top: 20px; padding: 14px 18px;
+    background: rgba(129,140,248,0.08);
+    border-left: 3px solid var(--accent-2);
+    border-radius: 6px; font-size: 0.95rem; color: var(--text);
+  }
+  .reason strong { color: var(--accent-2); }
+  .content-row { display: flex; gap: 32px; align-items: center; flex: 1; }
+  .content-col { flex: 1; }
+  ul.clean { margin: 0; padding-left: 20px; line-height: 1.7; }
+  table.cmp {
+    width: 100%; border-collapse: collapse; font-size: 0.95rem;
+  }
+  table.cmp th, table.cmp td {
+    text-align: left; padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  table.cmp th { color: var(--accent); }
+  .metric-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px;
+  }
+  .metric {
+    background: rgba(255,255,255,0.04); border-radius: 12px; padding: 18px;
+    text-align: center;
+  }
+  .metric .num { font-size: 2rem; font-weight: 700; color: var(--accent); }
+  .metric .label { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+  .screenshot-placeholder {
+    width: 100%; max-width: 480px; border-radius: 10px;
+    border: 1px dashed rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.02);
+    padding: 8px; display: block; margin-top: 12px;
+  }
+  .nav-arrow {
+    position: fixed; top: 50%; transform: translateY(-50%);
+    background: rgba(255,255,255,0.06); border: none; color: var(--text);
+    width: 48px; height: 48px; border-radius: 50%; cursor: pointer;
+    font-size: 1.4rem; z-index: 10;
+    transition: background 0.15s;
+  }
+  .nav-arrow:hover { background: rgba(255,255,255,0.15); }
+  .nav-arrow.prev { left: 24px; }
+  .nav-arrow.next { right: 24px; }
+  .progress {
+    position: fixed; bottom: 0; left: 0; height: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    transition: width 0.25s ease;
+  }
+  code {
+    background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px;
+    font-family: 'Cascadia Code', Consolas, monospace; font-size: 0.9em;
+  }
+  svg text { fill: var(--text); font-family: inherit; }
+</style>
+</head>
+<body>
+
+<div class="deck">
+
+  <!-- Slide 1: Portada + problema (fusionadas) -->
+  <div class="slide active">
+    <div class="badge">Agente conversacional NL → SQL</div>
+    <h1>postgresql-rag-agent</h1>
+    <div class="subtitle">Convierte lenguaje natural en SQL seguro, sobre cualquier PostgreSQL — sin hardcodear un solo esquema.</div>
+    <div class="content-row">
+      <div class="content-col">
+        <p class="pitch"><strong>El problema:</strong> equipos no técnicos dependen de un dev o analista para responder preguntas simples sobre sus propios datos. Escribir SQL a mano es lento, propenso a error y no escala con el negocio.</p>
+        <p class="pitch"><strong>La oportunidad:</strong> cualquier empresa con una base PostgreSQL y usuarios no-SQL es cliente potencial — desde equipos de producto hasta soporte y ventas.</p>
+      </div>
+    </div>
+    <div class="reason"><strong>Por qué importa:</strong> no es una demo de nicho — es un producto que se conecta a la Postgres que ya tenés, sin reescribir nada.</div>
+    <div class="slide-number">1 / 11</div>
+  </div>
+
+  <!-- Slide 2: Arranque automático -->
+  <div class="slide">
+    <h2>Arranque automático</h2>
+    <div class="content-row">
+      <div class="content-col">
+        <svg viewBox="0 0 400 140" width="100%" height="140">
+          <rect x="10" y="50" width="100" height="40" rx="8" fill="#818cf8" opacity="0.25" stroke="#818cf8"/>
+          <text x="60" y="75" text-anchor="middle" font-size="14">.env</text>
+          <line x1="110" y1="70" x2="160" y2="70" stroke="#5eead4" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="160" y="50" width="100" height="40" rx="8" fill="#5eead4" opacity="0.25" stroke="#5eead4"/>
+          <text x="210" y="75" text-anchor="middle" font-size="14">bootstrap</text>
+          <line x1="260" y1="70" x2="310" y2="70" stroke="#5eead4" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="310" y="50" width="80" height="40" rx="8" fill="#4ade80" opacity="0.25" stroke="#4ade80"/>
+          <text x="350" y="75" text-anchor="middle" font-size="14">DB lista</text>
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L8,3 L0,6 Z" fill="#5eead4"/>
+            </marker>
+          </defs>
+        </svg>
+        <p class="pitch">Si la base de datos indicada en <code>DATABASE_URL</code> no existe, el bootstrap la crea automáticamente, junto con una tabla demo (<code>Usuario</code>, 5 filas) para probar el flujo NL → SQL sin necesidad de tener datos propios todavía.</p>
+      </div>
+    </div>
+    <div class="reason"><strong>Por qué importa:</strong> cero fricción para evaluar el producto — se prueba en minutos, no en días de setup.</div>
+    <div class="slide-number">2 / 11</div>
+  </div>
+
+  <!-- Slide 3: Esquema agnóstico -->
+  <div class="slide">
+    <h2>Esquema agnóstico</h2>
+    <div class="content-row">
+      <div class="content-col">
+        <strong style="color:var(--danger)">❌ Antes (enfoque típico)</strong>
+        <ul class="clean"><li>DDL hardcodeado por dominio de negocio</li><li>Cada cliente nuevo = reescribir el agente</li></ul>
+      </div>
+      <div class="content-col">
+        <strong style="color:var(--ok)">✅ postgresql-rag-agent</strong>
+        <ul class="clean"><li>Introspección en runtime vía <code>information_schema</code></li><li>Se conecta a cualquier Postgres tal cual está</li></ul>
+      </div>
+    </div>
+    <div class="reason"><strong>Por qué importa:</strong> no es un producto de nicho atado a un dominio — escala horizontalmente a cualquier cliente sin reescribir código.</div>
+    <div class="slide-number">3 / 11</div>
+  </div>
+
+  <!-- Slide 4: El grafo LangGraph -->
+  <div class="slide">
+    <h2>El grafo LangGraph</h2>
+    <svg viewBox="0 0 760 130" width="100%" height="130">
+      <g font-size="12">
+        <rect x="0" y="45" width="110" height="40" rx="8" fill="#818cf8" opacity="0.25" stroke="#818cf8"/>
+        <text x="55" y="70" text-anchor="middle">Seguridad</text>
+        <line x1="110" y1="65" x2="140" y2="65" stroke="#5eead4" stroke-width="2" marker-end="url(#a2)"/>
+        <rect x="140" y="45" width="110" height="40" rx="8" fill="#5eead4" opacity="0.25" stroke="#5eead4"/>
+        <text x="195" y="70" text-anchor="middle">RAG (Chroma)</text>
+        <line x1="250" y1="65" x2="280" y2="65" stroke="#5eead4" stroke-width="2" marker-end="url(#a2)"/>
+        <rect x="280" y="45" width="110" height="40" rx="8" fill="#4ade80" opacity="0.25" stroke="#4ade80"/>
+        <text x="335" y="70" text-anchor="middle">Genera SQL</text>
+        <line x1="390" y1="65" x2="420" y2="65" stroke="#5eead4" stroke-width="2" marker-end="url(#a2)"/>
+        <rect x="420" y="45" width="110" height="40" rx="8" fill="#f87171" opacity="0.25" stroke="#f87171"/>
+        <text x="475" y="70" text-anchor="middle">Valida</text>
+        <line x1="530" y1="65" x2="560" y2="65" stroke="#5eead4" stroke-width="2" marker-end="url(#a2)"/>
+        <rect x="560" y="45" width="110" height="40" rx="8" fill="#818cf8" opacity="0.25" stroke="#818cf8"/>
+        <text x="615" y="70" text-anchor="middle">Ejecuta</text>
+        <line x1="670" y1="65" x2="700" y2="65" stroke="#5eead4" stroke-width="2" marker-end="url(#a2)"/>
+        <rect x="700" y="45" width="55" height="40" rx="8" fill="#5eead4" opacity="0.25" stroke="#5eead4"/>
+        <text x="727" y="70" text-anchor="middle" font-size="10">Respuesta</text>
+      </g>
+      <defs>
+        <marker id="a2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6 Z" fill="#5eead4"/>
+        </marker>
+      </defs>
+    </svg>
+    <p class="pitch">Orquestado como un grafo de estados con LangGraph: cada nodo es una función independiente y auditable.</p>
+    <div class="reason"><strong>Por qué importa:</strong> no es una caja negra de "prompt mágico" — es un pipeline controlado, donde cada paso se puede testear, versionar y depurar por separado.</div>
+    <div class="slide-number">4 / 11</div>
+  </div>
+
+  <!-- Slide 5: Seguridad en 2 capas -->
+  <div class="slide">
+    <h2>Seguridad en 2 capas</h2>
+    <svg viewBox="0 0 500 150" width="100%" height="150">
+      <polygon points="20,10 480,10 380,70 120,70" fill="#818cf8" opacity="0.2" stroke="#818cf8"/>
+      <text x="250" y="45" text-anchor="middle" font-size="14">Keywords bloqueadas (DROP, DELETE...)</text>
+      <polygon points="120,70 380,70 320,110 180,110" fill="#5eead4" opacity="0.2" stroke="#5eead4"/>
+      <text x="250" y="95" text-anchor="middle" font-size="14">Análisis con Gemini</text>
+      <polygon points="180,110 320,110 290,140 210,140" fill="#4ade80" opacity="0.2" stroke="#4ade80"/>
+      <text x="250" y="130" text-anchor="middle" font-size="12">validate_sql</text>
+    </svg>
+    <p class="pitch">Embudo de validación: primero un filtro determinístico de keywords, luego análisis semántico con el LLM, y por último una validación estructural del SQL antes de ejecutarlo.</p>
+    <div class="reason"><strong>Por qué importa:</strong> ningún LLM ejecuta SQL directo contra tu base — siempre hay una capa determinística entre la generación y la ejecución, crítico para adopción empresarial.</div>
+    <div class="slide-number">5 / 11</div>
+  </div>
+
+  <!-- Slide 6: Errores 503 vs 400 -->
+  <div class="slide">
+    <h2>Errores: 503 vs 400</h2>
+    <table class="cmp">
+      <tr><th>Tipo</th><th>Código HTTP</th><th>Significado</th></tr>
+      <tr><td>Rechazo de seguridad</td><td><code>400</code></td><td>La pregunta pide algo no permitido (ej. borrar datos)</td></tr>
+      <tr><td>Error transitorio del LLM</td><td><code>503</code></td><td>Rate limit o timeout de Gemini — no es culpa del usuario</td></tr>
+    </table>
+    <div class="reason"><strong>Por qué importa:</strong> UX honesta — el usuario final sabe si el sistema dijo "no" por seguridad o falló temporalmente, sin quedar confundido ni perder confianza en el producto.</div>
+    <div class="slide-number">6 / 11</div>
+  </div>
+
+  <!-- Slide 7: RAG con ChromaDB -->
+  <div class="slide">
+    <h2>RAG con ChromaDB</h2>
+    <svg viewBox="0 0 500 100" width="100%" height="100">
+      <rect x="0" y="30" width="120" height="40" rx="8" fill="#818cf8" opacity="0.25" stroke="#818cf8"/>
+      <text x="60" y="55" text-anchor="middle" font-size="12">Pregunta</text>
+      <line x1="120" y1="50" x2="160" y2="50" stroke="#5eead4" stroke-width="2" marker-end="url(#a3)"/>
+      <rect x="160" y="30" width="140" height="40" rx="8" fill="#5eead4" opacity="0.25" stroke="#5eead4"/>
+      <text x="230" y="55" text-anchor="middle" font-size="12">Embedding</text>
+      <line x1="300" y1="50" x2="340" y2="50" stroke="#5eead4" stroke-width="2" marker-end="url(#a3)"/>
+      <rect x="340" y="30" width="160" height="40" rx="8" fill="#4ade80" opacity="0.25" stroke="#4ade80"/>
+      <text x="420" y="55" text-anchor="middle" font-size="12">Contexto similar</text>
+      <defs><marker id="a3" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#5eead4"/></marker></defs>
+    </svg>
+    <p class="pitch">Cada pregunta se convierte en embedding y se compara contra consultas ya resueltas guardadas en ChromaDB, reutilizando contexto en vez de generar SQL desde cero cada vez.</p>
+    <div class="reason"><strong>Por qué importa:</strong> el sistema mejora con el uso, sin reentrenar nada — cada consulta resuelta enriquece las respuestas futuras.</div>
+    <div class="slide-number">7 / 11</div>
+  </div>
+
+  <!-- Slide 8: Neo4j como memoria -->
+  <div class="slide">
+    <h2>Neo4j como memoria</h2>
+    <svg viewBox="0 0 400 160" width="100%" height="160">
+      <circle cx="200" cy="30" r="26" fill="#818cf8" opacity="0.3" stroke="#818cf8"/>
+      <text x="200" y="34" text-anchor="middle" font-size="11">Query A</text>
+      <circle cx="100" cy="120" r="26" fill="#5eead4" opacity="0.3" stroke="#5eead4"/>
+      <text x="100" y="124" text-anchor="middle" font-size="11">Query B</text>
+      <circle cx="300" cy="120" r="26" fill="#4ade80" opacity="0.3" stroke="#4ade80"/>
+      <text x="300" y="124" text-anchor="middle" font-size="11">Query C</text>
+      <line x1="185" y1="52" x2="115" y2="98" stroke="#9ca3af" stroke-width="1.5"/>
+      <line x1="215" y1="52" x2="285" y2="98" stroke="#9ca3af" stroke-width="1.5"/>
+    </svg>
+    <p class="pitch">Grafo de nodos <code>SQLQuery</code> con relaciones que indexan el historial de consultas SQL exitosas ejecutadas por el agente.</p>
+    <div class="reason"><strong>Por qué importa:</strong> memoria estructurada y consultable — no solo vectores — permite trazabilidad real de qué se preguntó y qué SQL se generó.</div>
+    <div class="slide-number">8 / 11</div>
+  </div>
+
+  <!-- Slide 9: Auth -->
+  <div class="slide">
+    <h2>Auth</h2>
+    <div class="content-row">
+      <div class="content-col">
+        <p class="pitch">Autenticación por API Key (<code>APIKeyHeader</code>) protegiendo <code>POST /chat</code>, con botón <strong>Authorize</strong> visible en Swagger UI (<code>/docs</code>).</p>
+        <img src="assets/swagger-authorize.png" alt="Botón Authorize en Swagger UI" class="screenshot-placeholder">
+      </div>
+    </div>
+    <div class="reason"><strong>Por qué importa:</strong> listo para exponerse como servicio real, no un script de laboratorio — auth desde el día uno.</div>
+    <div class="slide-number">9 / 11</div>
+  </div>
+
+  <!-- Slide 10: Swagger -->
+  <div class="slide">
+    <h2>Swagger</h2>
+    <div class="content-row">
+      <div class="content-col">
+        <p class="pitch">Respuesta en lenguaje natural.</p>
+        <img src="assets/swagger-response.png" alt="Respuesta de /chat en Swagger UI" class="screenshot-placeholder">
+      </div>
+    </div>
+    <div class="slide-number">10 / 11</div>
+  </div>
+
+  <!-- Slide 11: Calidad + SDD + Cierre -->
+  <div class="slide">
+    <h2>Calidad, proceso y cierre</h2>
+    <div class="metric-grid">
+      <div class="metric"><div class="num">32</div><div class="label">tests automatizados</div></div>
+      <div class="metric"><div class="num">7</div><div class="label">changes archivados vía SDD</div></div>
+      <div class="metric"><div class="num">100%</div><div class="label">desplegado en Cloud Run</div></div>
+    </div>
+    <p class="pitch" style="margin-top:24px;">Cada funcionalidad pasó por propuesta → spec → diseño → tareas → implementación → verificación (SDD), con memoria persistente de decisiones técnicas entre sesiones.</p>
+    <div class="reason"><strong>En una frase:</strong> un agente de datos production-ready, con seguridad en capas, memoria que mejora con el uso, y un proceso de desarrollo trazable — no un prototipo de fin de semana.</div>
+    <div class="slide-number">11 / 11</div>
+  </div>
+
+</div>
+
+<button class="nav-arrow prev" onclick="go(-1)">&#8592;</button>
+<button class="nav-arrow next" onclick="go(1)">&#8594;</button>
+<div class="progress" id="progress"></div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  function render() {
+    slides.forEach((s, i) => s.classList.toggle('active', i === current));
+    document.getElementById('progress').style.width = ((current + 1) / slides.length * 100) + '%';
+  }
+  function go(delta) {
+    current = (current + delta + slides.length) % slides.length;
+    render();
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') go(1);
+    if (e.key === 'ArrowLeft') go(-1);
+  });
+  render();
+</script>
+
+</body>
+</html>
