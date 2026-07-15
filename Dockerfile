@@ -12,7 +12,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Instala el propio paquete (layout src/) para que "agent" sea importable como
+# top-level (mismo mecanismo que "pip install -e ." usa en desarrollo local).
+RUN pip install --no-cache-dir --no-deps -e .
+
 ENV PYTHONUNBUFFERED=1
+
+# Deshabilita el backend "xet" de HuggingFace Hub: su cliente Rust no confia
+# en la CA del proxy de red corporativo y falla al descargar modelos (SentenceTransformer).
+ENV HF_HUB_DISABLE_XET=1
 
 # Cloud Run inyecta $PORT en runtime (default 8080, no 10000 como Render)
 CMD exec uvicorn src.agent.api:app --host 0.0.0.0 --port ${PORT:-8080}
