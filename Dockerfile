@@ -8,6 +8,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
+
+# torch desde el indice CPU-only oficial: Cloud Run no tiene GPU, y la wheel
+# default de PyPI arrastra ~2GB+ de paquetes nvidia_cuda_* innecesarios que
+# alargan mucho el build (y pueden superar el timeout de Cloud Build).
+RUN pip install --no-cache-dir torch==2.7.1 --index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
