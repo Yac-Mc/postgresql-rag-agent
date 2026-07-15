@@ -1,4 +1,5 @@
 import asyncio
+import threading
 import json
 import os
 
@@ -1141,21 +1142,47 @@ def _bootstrap_demo_database():
 
 
 def setup_graph():
+    """Inicializa el agente de forma síncrona al importar el módulo.
+
+    Se ejecuta el `_init_models()` async dentro de un thread separado, con su
+    propio event loop nuevo, en vez de correrlo directamente en el thread
+    principal. Esto es necesario porque cuando uvicorn recibe la app como
+    string (`uvicorn src.agent.api:app`, usado en producción/Render), el
+    import del módulo ocurre DENTRO de `asyncio.run(self.serve(...))` — es
+    decir, ya hay un event loop corriendo en el thread principal en ese
+    momento. Intentar crear y correr un loop nuevo ahí mismo lanza
+    "RuntimeError: Cannot run the event loop while another loop is running".
+    Al aislar la ejecución en un thread nuevo, el loop que se crea acá nunca
+    coincide con el del thread principal, sin importar si ya había uno
+    corriendo o no (cubre tanto `python api.py` local, como `langgraph dev`,
+    como el Start Command de Render).
+    """
     print("1. Configurando grafo")
     _bootstrap_demo_database()
     agent = LangGraphAgent()
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        print("2. Inicializando modelos.")
-        loop.run_until_complete(agent._init_models())
-        print("3. Configuración del grafo completada exitosamente")
-    except Exception as e:
-        print(f"4. Error en setup_graph: {str(e)}")
-        raise
-    finally:
-        print("5. Cerrando loop de eventos")
-        loop.close()
+    error_holder = {}
+
+    def _run_init():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            print("2. Inicializando modelos.")
+            loop.run_until_complete(agent._init_models())
+            print("3. Configuración del grafo completada exitosamente")
+        except Exception as e:
+            print(f"4. Error en setup_graph: {str(e)}")
+            error_holder["error"] = e
+        finally:
+            print("5. Cerrando loop de eventos")
+            loop.close()
+
+    thread = threading.Thread(target=_run_init, name="setup_graph-init")
+    thread.start()
+    thread.join()
+
+    if "error" in error_holder:
+        raise error_holder["error"]
+
     return agent
 
 agent = setup_graph()
