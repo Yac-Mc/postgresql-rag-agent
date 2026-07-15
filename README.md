@@ -213,17 +213,53 @@ existente):
 
 ## Despliegue
 
-Fase de publicación pública (temporal, free tier), en curso:
+Arquitectura de publicación pública (temporal, free/low-cost tier), en curso:
 
 - **Neon.tech**: Postgres gestionado en la nube, reemplaza al contenedor
-  local `postgres-local` para el ambiente productivo.
+  local `postgres-local` para el ambiente productivo. Se eligió por su tier
+  gratuito serverless (escala a cero cuando no hay tráfico) y porque no
+  requiere administrar infraestructura propia de base de datos.
 - **Neo4j Aura**: instancia gestionada en la nube, reemplaza al contenedor
-  local `neo4j-local` para el ambiente productivo.
-- **Render**: hosting del Web Service que expone la API (`/chat`, `/docs`).
-  - Build Command: `pip install -r requirements.txt`
-  - Start Command: `uvicorn src.agent.api:app --host 0.0.0.0 --port $PORT`
-  - `.python-version` fijado a `3.12.9` (Render usa 3.14 por defecto, sin
-    wheels precompilados para algunas dependencias con extensiones nativas).
+  local `neo4j-local` para el ambiente productivo. Almacena la memoria de
+  consultas SQL exitosas que usa el agente para mejorar respuestas futuras;
+  al ser un servicio administrado, evita levantar y mantener un Neo4j propio
+  solo para esta funcionalidad de memoria.
+- **Google Cloud Run**: hosting serverless de contenedores que expone la API
+  (`/chat`, `/docs`).
+
+  **Por qué Cloud Run y no una VM o un servicio administrado tipo App Engine:**
+  - Escala a cero: si no hay tráfico, no cobra cómputo (relevante para este 
+    proyecto ya que es acádemico y no requiere de alto flujo).
+  - Corre cualquier imagen Docker: el proyecto ya tenía dependencias nativas
+    pesadas (torch, chromadb, onnxruntime) y un `Start Command` específico ya
+    validado en Render, por lo que empaquetar todo en un `Dockerfile` propio
+    da control total sobre el entorno de ejecución, en vez de depender de la
+    detección automática de buildpacks.
+  - No requiere gestionar servidores ni parches de SO (a diferencia de una VM
+    en Compute Engine).
+
+  **Configuración del despliegue:**
+  - `Dockerfile` en la raíz: Python 3.12.9-slim, instala `torch` desde el
+    índice CPU-only oficial de PyTorch (Cloud Run no tiene GPU; la wheel
+    default de PyPI trae ~2GB+ de paquetes `nvidia_cuda_*` innecesarios que
+    alargan mucho el build), instala el resto de `requirements.txt`, e
+    instala el propio paquete en modo editable (`pip install -e .`) para que
+    `agent` sea importable como top-level (mismo mecanismo que en desarrollo
+    local).
+  - `HF_HUB_DISABLE_XET=1`: evita que la carga del modelo de embeddings
+    (SentenceTransformer) dependa del backend Rust "xet" de HuggingFace Hub.
+  - Cloud Run inyecta el puerto vía la variable `$PORT` (default `8080`); 
+    el `CMD` del Dockerfile lo lee dinámicamente.
+  - `.dockerignore` excluye `venv/`, `.env`, `chroma_db_v2/`, `tests/`,
+    `openspec/` y `.git/` del contexto de build.
+  - Deploy vía `gcloud run deploy --source .` desde Cloud Shell: variables de
+    entorno sensibles (`DATABASE_URL`, `NEO4J_URI`, `NEO4J_USER`,
+    `NEO4J_PASSWORD`, `GEMINI_API_KEY`, `API_KEY`) se pasan con
+    `--set-env-vars`, región `us-central1` (misma región donde están alojados
+    Neon y Neo4j Aura, para minimizar latencia de red en cada llamada a la
+    DB dentro del grafo de LangGraph), `--allow-unauthenticated` (el
+    endpoint queda expuesto a nivel de red, pero protegido a nivel de
+    aplicación por la autenticación de API Key propia en `/chat`).
   - Swagger (`/docs`) queda público intencionalmente, dado el carácter
     temporal del despliegue.
 
