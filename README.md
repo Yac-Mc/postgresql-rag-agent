@@ -211,6 +211,22 @@ existente):
 - [ ] `add-conversation-memory`
 - [x] `add-api-key-auth`
 
+## Despliegue
+
+Fase de publicación pública (temporal, free tier), en curso:
+
+- **Neon.tech**: Postgres gestionado en la nube, reemplaza al contenedor
+  local `postgres-local` para el ambiente productivo.
+- **Neo4j Aura**: instancia gestionada en la nube, reemplaza al contenedor
+  local `neo4j-local` para el ambiente productivo.
+- **Render**: hosting del Web Service que expone la API (`/chat`, `/docs`).
+  - Build Command: `pip install -r requirements.txt`
+  - Start Command: `uvicorn src.agent.api:app --host 0.0.0.0 --port $PORT`
+  - `.python-version` fijado a `3.12.9` (Render usa 3.14 por defecto, sin
+    wheels precompilados para algunas dependencias con extensiones nativas).
+  - Swagger (`/docs`) queda público intencionalmente, dado el carácter
+    temporal del despliegue.
+
 ## Desarrollo y documentación de cambios
 
 Este proyecto combina dos herramientas para mantener contexto entre sesiones
