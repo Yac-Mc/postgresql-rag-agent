@@ -1,0 +1,15 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+chroma_db_v2/
+openspec/
+tests/
+.git/
+.gitignore
+.python-version
+README.md
+Dockerfile
+.dockerignore
+*.md
