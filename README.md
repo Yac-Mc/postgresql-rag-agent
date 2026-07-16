@@ -213,7 +213,9 @@ existente):
 
 ## Despliegue
 
+**API en producción (Swagger):** https://postgresql-rag-agent-9229279315.us-central1.run.app/docs
 **Slides del proyecto (arquitectura, seguridad, calidad):** https://slides-postgresql-rag-agent.onrender.com
+**Video explicativo (nivel técnico):** https://slides-postgresql-rag-agent.onrender.com/video
 
 Arquitectura de publicación pública (temporal, free/low-cost tier), en curso:
 
