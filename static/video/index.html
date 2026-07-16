@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>postgresql-rag-agent — Demo técnica</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #161925;
+    --accent: #5eead4;
+    --accent-2: #818cf8;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg); color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+  .wrap {
+    max-width: 900px; margin: 0 auto; padding: 48px 24px 80px;
+  }
+  .back-link {
+    display: inline-block; margin-bottom: 24px;
+    color: var(--muted); text-decoration: none; font-size: 0.95rem;
+  }
+  .back-link:hover { color: var(--accent); }
+  h1 {
+    font-size: 2.2rem; margin: 0 0 8px 0;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .subtitle { color: var(--muted); margin-bottom: 32px; font-size: 1.05rem; }
+  .video-frame {
+    position: relative; width: 100%; padding-bottom: 56.25%; /* 16:9 */
+    height: 0; overflow: hidden; border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .video-frame iframe {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;
+  }
+  h2 {
+    color: var(--accent); font-size: 1.5rem; margin-top: 56px; margin-bottom: 16px;
+  }
+  .panel {
+    background: var(--panel); border-radius: 12px; padding: 24px 28px;
+    margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.06);
+  }
+  code, pre {
+    font-family: 'Cascadia Code', Consolas, monospace; font-size: 0.9rem;
+  }
+  pre {
+    background: rgba(0,0,0,0.3); padding: 16px 20px; border-radius: 8px;
+    overflow-x: auto; line-height: 1.5; color: #d1d5db;
+  }
+  code.inline {
+    background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px;
+  }
+  p { line-height: 1.7; }
+  .tree { line-height: 1.8; }
+  .tree .dir { color: var(--accent-2); }
+  .tree .file { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <a href="/" class="back-link">&#8592; Volver a las slides</a>
+
+  <h1>Demo técnica — postgresql-rag-agent</h1>
+  <p class="subtitle">Recorrido en video del proyecto: arquitectura, flujo del grafo y decisiones técnicas clave.</p>
+
+  <div class="video-frame">
+    <iframe src="https://www.youtube.com/embed/qTZBPD9F0Rk?si=XnIlQqtUPuzHWcVW"
+      title="YouTube video player" frameborder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+  </div>
+
+  <h2>Paseo técnico por el código</h2>
+
+  <div class="panel">
+    <p><strong>Estructura de carpetas relevante:</strong></p>
+    <pre class="tree"><span class="dir">src/agent/</span>
+  <span class="file">graph.py</span>          — orquestación del flujo con LangGraph
+  <span class="file">nodes/</span>            — nodos del grafo (seguridad, RAG, generación SQL, validación, ejecución, respuesta)
+  <span class="file">api.py</span>            — expone el agente como API REST (POST /chat), auth por API Key
+  <span class="file">state.py</span>          — esquema de estado compartido entre nodos
+
+<span class="dir">openspec/</span>
+  <span class="file">changes/</span>          — propuestas, specs, diseño y tareas de cada cambio (SDD)
+  <span class="file">specs/</span>            — specs maestras vigentes
+
+<span class="dir">static/</span>
+  <span class="file">index.html</span>        — slides del proyecto
+  <span class="file">video/index.html</span>  — esta página</pre>
+  </div>
+
+  <div class="panel">
+    <p><strong>El grafo de LangGraph</strong> (<code class="inline">src/agent/graph.py</code>) orquesta el flujo como un pipeline de nodos independientes:</p>
+    <pre>analizar_seguridad → buscar_contexto_rag → generar_sql → validar_sql → ejecutar_consulta → generar_respuesta</pre>
+    <p>Cada nodo es una función testeable por separado, no un único prompt monolítico.</p>
+  </div>
+
+  <div class="panel">
+    <p><strong>Seguridad en 2 capas</strong> antes de ejecutar cualquier SQL:</p>
+    <pre>1. Filtro de keywords bloqueadas (DROP, DELETE, TRUNCATE, ...)
+2. Análisis semántico con Gemini (¿la intención de la pregunta es legítima?)
+3. validate_sql: validación estructural del SQL generado</pre>
+    <p>Ningún LLM ejecuta SQL directo contra la base — siempre hay una capa determinística entre la generación y la ejecución.</p>
+  </div>
+
+  <div class="panel">
+    <p><strong>Manejo honesto de errores:</strong> el agente distingue un rechazo de seguridad (<code class="inline">400</code>) de un error transitorio del LLM como rate limit o timeout (<code class="inline">503</code>), para que el usuario final entienda si el sistema dijo "no" o simplemente falló temporalmente.</p>
+  </div>
+
+</div>
+</body>
+</html>
